@@ -50,6 +50,7 @@
         this.hasFocus = true;
 
         this.renderInput();
+        this.lookup();
 
         this.bindEvents();
     };
@@ -373,19 +374,36 @@
             // If the delimiter is a string value convert it to an array. (backwards compatibility)
             autoCompleteData.delimiter = (autoCompleteData.delimiter !== undefined) ? !$.isArray(autoCompleteData.delimiter) ? [autoCompleteData.delimiter] : autoCompleteData.delimiter : ['@'];
 
-            function prevCharIsSpace() {
-                var start = ed.selection.getRng(true).startOffset,
-                      text = ed.selection.getRng(true).startContainer.data || '',
-                      charachter = text.substr(start - 1, 1);
+            function checkDelimiter() {
+                var range = ed.selection.getRng(true);
+                if (range.startOffset !== range.endOffset) {
+                    return -1;
+                }
 
-                return (!!$.trim(charachter).length) ? false : true;
+                var current = range.startOffset,
+                    text = ed.selection.getRng(true).startContainer.data || '',
+                    space = text.slice(current - 2, current - 1),
+                    character = text.slice(current - 1, current);
+
+                return $.trim(space) ? -1 : $.inArray(character, autoCompleteData.delimiter);
             }
 
-            ed.on('keypress', function (e) {
-                var delimiterIndex = $.inArray(String.fromCharCode(e.which || e.keyCode), autoCompleteData.delimiter);
-                if (delimiterIndex > -1 && prevCharIsSpace()) {
+            ed.on('keyup', function (e) {
+                if (e.which === 8 || e.keyCode === 8 || e.key === 'Backspace') {
+                    // ignore backspace
+                    return;
+                }
+                var delimiterIndex = checkDelimiter();
+                if (delimiterIndex > -1) {
                     if (autoComplete === undefined || (autoComplete.hasFocus !== undefined && !autoComplete.hasFocus)) {
                         e.preventDefault();
+                        try {
+                            var range = ed.selection.getRng(true);
+                            range.setStart(range.startContainer, range.startOffset-1);
+                            ed.selection.setRng(range);
+                        } catch(e) {
+                            // silently ignore
+                        }
                         // Clone options object and set the used delimiter.
                         autoComplete = new AutoComplete(ed, $.extend({}, autoCompleteData, { delimiter: autoCompleteData.delimiter[delimiterIndex] }));
                     }
