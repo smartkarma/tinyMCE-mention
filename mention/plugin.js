@@ -107,8 +107,11 @@
 
             //BACKSPACE
             case 8:
+            //SPACE
+            case 32:
                 if (this.query === '') {
                     this.cleanUp(true);
+                    e.stopPropagation();
                 } else {
                     this.lookup();
                 }
@@ -146,6 +149,13 @@
             //ESC
             case 27:
                 e.preventDefault();
+                break;
+
+            //SPACE
+            case 32:
+                if (this.query === '') {
+                    e.preventDefault();
+                }
                 break;
 
             //UP ARROW
