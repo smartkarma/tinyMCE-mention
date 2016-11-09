@@ -23,7 +23,7 @@
     } else {
       g = this;
     }
-    
+
     f(g.jQuery);
   }
 
@@ -77,8 +77,6 @@
             this.editor.on('click', this.editorClickProxy = $.proxy(this.rteClicked, this));
 
             $('body').on('click', this.bodyClickProxy = $.proxy(this.rteLostFocus, this));
-
-            $(this.editor.getWin()).on('scroll', this.rteScroll = $.proxy(function () { this.cleanUp(true); }, this));
         },
 
         unbindEvents: function () {
@@ -87,8 +85,6 @@
             this.editor.off('click', this.editorClickProxy);
 
             $('body').off('click', this.bodyClickProxy);
-
-            $(this.editor.getWin()).off('scroll', this.rteScroll);
         },
 
         rteKeyUp: function (e) {
@@ -240,10 +236,12 @@
         show: function () {
             var offset = this.editor.inline ? this.offsetInline() : this.offset();
 
-            this.$dropdown = $(this.renderDropdown())
-                                .css({ 'top': offset.top, 'left': offset.left });
+            var dropdown = '<div class="rte-autocomplete-container"><span class="tail --shadow"></span><span class="tail --foreground"></span>' + this.renderDropdown() + '</div>';
+            this.$dropdown = $(dropdown).css({ 'top': offset.top, 'left': offset.left });
 
             $('body').append(this.$dropdown);
+
+            this.adjustPosition();
 
             this.$dropdown.on('click', $.proxy(this.autoCompleteClick, this));
         },
@@ -276,7 +274,7 @@
             });
 
             if (result.length) {
-                this.$dropdown.html(result.join('')).show();
+                this.$dropdown.find('.rte-autocomplete').html(result.join('')).show();
             } else {
                 this.$dropdown.hide();
             }
@@ -331,14 +329,19 @@
             this.unbindEvents();
             this.hasFocus = false;
 
-            if (this.$dropdown !== undefined) {
+            var $selection = $(this.editor.dom.select('span#autocomplete'));
+
+            if (this.$dropdown !== undefined || !$selection.length) {
                 this.$dropdown.remove();
                 delete this.$dropdown;
+
+                if (!$selection.length) {
+                    return;
+                }
             }
 
             if (rollback) {
                 var text = this.query,
-                    $selection = $(this.editor.dom.select('span#autocomplete')),
                     replacement = $('<p>' + this.options.delimiter + text + '</p>')[0].firstChild,
                     focus = $(this.editor.selection.getNode()).offset().top === ($selection.offset().top + (($selection.outerHeight() - $selection.height()) / 2));
 
@@ -364,11 +367,25 @@
 
         offsetInline: function () {
             var nodePosition = $(this.editor.dom.select('span#autocomplete')).offset();
-
             return {
                 top: nodePosition.top + $(this.editor.selection.getNode()).innerHeight() + 5,
                 left: nodePosition.left
             };
+        },
+
+        adjustPosition: function() {
+          var $dropdown = this.$dropdown;
+          var offsetLeft = $dropdown.offset().left;
+          var distanceToRight = $(window).width() - (offsetLeft + $dropdown.width() + 5);
+          if (distanceToRight > 0) {
+            return;
+          }
+          $dropdown.css('left', (offsetLeft + distanceToRight));
+
+          $.each($dropdown.find('.tail'), function (i, item) {
+            var element = $(item);
+            element.css('left', element.position().left - distanceToRight);
+          });
         }
 
     };
@@ -432,5 +449,5 @@
     });
 
     tinymce.PluginManager.add('mention', tinymce.plugins.Mention);
-  
+
 });
