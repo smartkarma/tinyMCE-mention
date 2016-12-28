@@ -192,6 +192,8 @@
 
             if (this.$dropdown === undefined) {
                 this.show();
+            } else {
+                this.$dropdown.show();
             }
 
             clearTimeout(this.searchTimeout);
