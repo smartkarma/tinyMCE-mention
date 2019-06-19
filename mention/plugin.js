@@ -1,4 +1,5 @@
 /*global tinymce, module, require, define, global, self */
+/* eslint-disable */
 
 (function(f) {
   'use strict';
@@ -337,8 +338,12 @@
           .find('.rte-autocomplete')
           .html(result.join(''))
           .show();
+        this.highlightNextResult();
       } else {
-        this.$dropdown.hide();
+        this.$dropdown
+          .find('.rte-autocomplete')
+          .html('<div class="empty-content">No results found</div>')
+          .show();
         this.$dropdown.find('li').removeClass('active');
       }
     },
@@ -571,3 +576,4 @@
 
   tinymce.PluginManager.add('mention', tinymce.plugins.Mention);
 });
+
